@@ -3,6 +3,7 @@ import java.io.*;
 class Solution {
     static int N = 25;
     static int NxN = 625;
+    static int MaskALL = 0x03FFFFFE;
     static int[][] g = new int[N][N];
     static int[] row = new int[N], col = new int[N], box = new int[N]; // bits 1..25
     static int[] er = new int[NxN], ec = new int[NxN]; // positions vides
@@ -61,10 +62,10 @@ class Solution {
         if (k == empties) return true;
 
         // choisir la case avec le moins de possibilités parmi k..end et l'amener en k
-        int best = -1, bestMask = 0, min = 26;
+        int best = -1, bestMask = 0, min = N+1;
         for (int i = k; i < empties; i++) {
             int r = er[i], c = ec[i], b = BOX_ID[r][c];
-            int mask = (~(row[r] | col[c] | box[b])) & 0x03FFFFFE; // bits autorisés 1..25
+            int mask = (~(row[r] | col[c] | box[b])) & MaskALL; // bits autorisés 1..25
             int cnt = Integer.bitCount(mask);
             //int cnt = bitCount[mask];
             if (cnt < min) { min = cnt; best = i; bestMask = mask; if (cnt == 1) break; }
