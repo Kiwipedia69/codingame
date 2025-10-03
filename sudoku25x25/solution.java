@@ -2,9 +2,14 @@ import java.io.*;
 
 class Solution {
     static int[][] g = new int[25][25];
-    static int[] row = new int[25], col = new int[25], box = new int[25]; // bits 1..9
+    static int[] row = new int[25], col = new int[25], box = new int[25]; // bits 1..25
     static int[] er = new int[625], ec = new int[625]; // positions vides
     static int empties = 0;
+
+    static final int[][] BOX_ID = new int[25][25];
+    static {
+        for (int r=0;r<25;r++) for (int c=0;c<25;c++) BOX_ID[r][c] = (r/5)*5 + (c/5);
+    }
 
     // static final int[] bitCount = new int[1024];
     // static {
@@ -56,8 +61,8 @@ class Solution {
         // choisir la case avec le moins de possibilités parmi k..end et l'amener en k
         int best = -1, bestMask = 0, min = 26;
         for (int i = k; i < empties; i++) {
-            int r = er[i], c = ec[i], b = boxId(r,c);
-            int mask = (~(row[r] | col[c] | box[b])) & 0x03FFFFFE; // bits autorisés 1..9
+            int r = er[i], c = ec[i], b = BOX_ID[r][c];
+            int mask = (~(row[r] | col[c] | box[b])) & 0x03FFFFFE; // bits autorisés 1..25
             int cnt = Integer.bitCount(mask);
             //int cnt = bitCount[mask];
             if (cnt < min) { min = cnt; best = i; bestMask = mask; if (cnt == 1) break; }
@@ -66,7 +71,7 @@ class Solution {
 
         // swap pour fixer l'ordre (évite structures lourdes)
         swap(k, best);
-        int r = er[k], c = ec[k], b = boxId(r,c);
+        int r = er[k], c = ec[k], b = BOX_ID[r][c];
         int mask = bestMask;
 
         // propagation directe : s’il n’y a qu’un candidat
