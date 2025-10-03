@@ -1,14 +1,16 @@
 import java.io.*;
 
 class Solution {
-    static int[][] g = new int[25][25];
-    static int[] row = new int[25], col = new int[25], box = new int[25]; // bits 1..25
-    static int[] er = new int[625], ec = new int[625]; // positions vides
+    static int N = 25;
+    static int NxN = 625;
+    static int[][] g = new int[N][N];
+    static int[] row = new int[N], col = new int[N], box = new int[N]; // bits 1..25
+    static int[] er = new int[NxN], ec = new int[NxN]; // positions vides
     static int empties = 0;
 
-    static final int[][] BOX_ID = new int[25][25];
+    static final int[][] BOX_ID = new int[N][N];
     static {
-        for (int r=0;r<25;r++) for (int c=0;c<25;c++) BOX_ID[r][c] = (r/5)*5 + (c/5);
+        for (int r=0;r<N;r++) for (int c=0;c<N;c++) BOX_ID[r][c] = (r/5)*5 + (c/5);
     }
 
     // static final int[] bitCount = new int[1024];
@@ -26,15 +28,15 @@ class Solution {
 
     static char intToChar(int c) {
     if (c == 0) return '.';
-    if (c >= 1 && c <= 25) return (char) ('A' + c - 1) ;
+    if (c >= 1 && c <= N) return (char) ('A' + c - 1) ;
     throw new IllegalArgumentException("Caractère invalide : " + c);
     }
 
     public static void main(String[] args) throws Exception {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        for (int i = 0; i < 25; i++) {
+        for (int i = 0; i < N; i++) {
             String s = br.readLine().trim();               // <-- remplir une ligne depuis une string
-            for (int j = 0; j < 25; j++) {
+            for (int j = 0; j < N; j++) {
                 int d = charToInt(s.charAt(j) );
                 g[i][j] = d;
                 if (d == 0) { er[empties] = i; ec[empties++] = j; }
@@ -47,8 +49,8 @@ class Solution {
         solve(0);
 
         StringBuilder out = new StringBuilder();
-        for (int i = 0; i < 25; i++) {
-            for (int j = 0; j < 25; j++) out.append(intToChar(g[i][j]));
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N; j++) out.append(intToChar(g[i][j]));
             out.append('\n');
         }
         System.out.print(out);
