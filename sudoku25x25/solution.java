@@ -17,7 +17,7 @@ class Solution {
                 BOX_ID[r][c] = (r / 5) * 5 + (c / 5);
     }
 
-    // Pile pour placements faits pendant la propagation (pour undo au retour de solve)
+    // Pile pour placements faits pendant la propagation (pour undo au retour de solve si échec de branche)
     static int[] stR = new int[NxN], stC = new int[NxN], stBit = new int[NxN];
     static int top = 0;
 
@@ -51,46 +51,146 @@ class Solution {
         }
     }
 
-    // Propagation en cascade des NAKED SINGLES uniquement.
-    // Retourne le nombre de placements effectués, ou -1 en cas de contradiction.
+    // Propagation en cascade :
+    //   1) Naked singles
+    //   2) Hidden singles (collecte → application) pour lignes, colonnes, boîtes
+    // Retourne nb de placements effectués (à annuler si la branche échoue), ou -1 si contradiction.
     static int propagateSingles(int k) {
         int pushed = 0;
         boolean changed;
+
         do {
             changed = false;
-            for (int i = k; i < empties; i++) {
-                int r = er[i], c = ec[i];
-                if (g[r][c] != 0) continue; // déjà rempli (par une propagation précédente)
-                int b = BOX_ID[r][c];
-                int mask = (~(row[r] | col[c] | box[b])) & MaskALL;
-                if (mask == 0) {                  // aucune possibilité -> contradiction
-                    unplace(pushed);
-                    return -1;
+
+            // ---- 1) Naked singles ----
+            boolean changedNaked;
+            do {
+                changedNaked = false;
+                for (int i = k; i < empties; i++) {
+                    int r = er[i], c = ec[i];
+                    if (g[r][c] != 0) continue;
+                    int b = BOX_ID[r][c];
+                    int mask = (~(row[r] | col[c] | box[b])) & MaskALL;
+                    if (mask == 0) { unplace(pushed); return -1; } // contradiction
+                    if ((mask & -mask) == mask) {
+                        place(r, c, mask);
+                        pushed++; changed = true; changedNaked = true;
+                    }
                 }
-                // Naked single : exactement 1 bit à 1
-                if ((mask & -mask) == mask) {
-                    place(r, c, mask);
-                    pushed++;
-                    changed = true;
+            } while (changedNaked);
+
+            // ---- 2) Hidden singles : LIGNES ----
+            int applied = 0;
+            for (int r = 0; r < N; r++) {
+                int[] hitC = new int[26];
+                int[] cnt = new int[26];
+                // Collecte
+                for (int i = k; i < empties; i++) {
+                    if (er[i] != r) continue;
+                    int c = ec[i];
+                    if (g[r][c] != 0) continue;
+                    int m = (~(row[r] | col[c] | box[BOX_ID[r][c]])) & MaskALL;
+                    if (m == 0) { unplace(pushed); return -1; }
+                    int mm = m;
+                    while (mm != 0) {
+                        int bit = mm & -mm; mm ^= bit;
+                        int v = Integer.numberOfTrailingZeros(bit);
+                        if (++cnt[v] == 1) hitC[v] = c; else hitC[v] = -1;
+                    }
+                }
+                // Application
+                for (int v = 1; v <= 25; v++) {
+                    if (cnt[v] == 1 && hitC[v] >= 0) {
+                        int c = hitC[v];
+                        if (g[r][c] != 0) continue;
+                        int bit = 1 << v;
+                        int m = (~(row[r] | col[c] | box[BOX_ID[r][c]])) & MaskALL;
+                        if ((m & bit) == 0) { unplace(pushed); return -1; }
+                        place(r, c, bit);
+                        pushed++; changed = true; applied++;
+                    }
                 }
             }
+            // ---- Hidden singles : COLONNES ----
+            for (int c = 0; c < N; c++) {
+                int[] hitR = new int[26];
+                int[] cnt = new int[26];
+                for (int i = k; i < empties; i++) {
+                    if (ec[i] != c) continue;
+                    int r = er[i];
+                    if (g[r][c] != 0) continue;
+                    int m = (~(row[r] | col[c] | box[BOX_ID[r][c]])) & MaskALL;
+                    if (m == 0) { unplace(pushed); return -1; }
+                    int mm = m;
+                    while (mm != 0) {
+                        int bit = mm & -mm; mm ^= bit;
+                        int v = Integer.numberOfTrailingZeros(bit);
+                        if (++cnt[v] == 1) hitR[v] = r; else hitR[v] = -1;
+                    }
+                }
+                for (int v = 1; v <= 25; v++) {
+                    if (cnt[v] == 1 && hitR[v] >= 0) {
+                        int r = hitR[v];
+                        if (g[r][c] != 0) continue;
+                        int bit = 1 << v;
+                        int m = (~(row[r] | col[c] | box[BOX_ID[r][c]])) & MaskALL;
+                        if ((m & bit) == 0) { unplace(pushed); return -1; }
+                        place(r, c, bit);
+                        pushed++; changed = true; applied++;
+                    }
+                }
+            }
+            // ---- Hidden singles : BOÎTES 5×5 ----
+            for (int b = 0; b < N; b++) {
+                int br = (b / 5) * 5, bc = (b % 5) * 5;
+                int[] hitR = new int[26], hitC = new int[26];
+                int[] cnt = new int[26];
+                for (int i = k; i < empties; i++) {
+                    int r = er[i], c = ec[i];
+                    if (r < br || r >= br + 5 || c < bc || c >= bc + 5) continue;
+                    if (g[r][c] != 0) continue;
+                    int m = (~(row[r] | col[c] | box[b])) & MaskALL;
+                    if (m == 0) { unplace(pushed); return -1; }
+                    int mm = m;
+                    while (mm != 0) {
+                        int bit = mm & -mm; mm ^= bit;
+                        int v = Integer.numberOfTrailingZeros(bit);
+                        if (++cnt[v] == 1) { hitR[v] = r; hitC[v] = c; } else { hitR[v] = -1; }
+                    }
+                }
+                for (int v = 1; v <= 25; v++) {
+                    if (cnt[v] == 1 && hitR[v] >= 0) {
+                        int r = hitR[v], c = hitC[v];
+                        if (g[r][c] != 0) continue;
+                        int bit = 1 << v;
+                        int m = (~(row[r] | col[c] | box[b])) & MaskALL;
+                        if ((m & bit) == 0) { unplace(pushed); return -1; }
+                        place(r, c, bit);
+                        pushed++; changed = true; applied++;
+                    }
+                }
+            }
+
+            // si des hidden ont été appliqués, reboucler (peut créer de nouveaux naked)
+            if (applied > 0) changed = true;
+
         } while (changed);
+
         return pushed;
     }
 
-    // Backtracking avec MRV + tie-break par degré + propagation (naked singles)
+    // Backtracking avec MRV + tie-break degré + LCV + propagation (naked + hidden singles)
     static boolean solve(int k){
         if (k == empties) return true;
 
-        // 0) Propagation (naked singles) avant de brancher
+        // 0) Propagation (naked + hidden) avant de brancher
         int pushed = propagateSingles(k);
-        if (pushed < 0) return false; // contradiction pendant la propagation
-
+        if (pushed < 0) return false; // contradiction
         // Avancer k au-delà des cases remplies par la propagation
         while (k < empties && g[er[k]][ec[k]] != 0) k++;
-        if (k == empties) return true;  //  garder les placements (PAS d’unplace ici)
+        if (k == empties) return true; // succès — on garde les placements
 
-        // 1) MRV + tie-break par degré
+        // 1) MRV + tie-break par degré (nb de voisins vides dans ligne/col/boîte)
         int best = -1, bestMask = 0, min = N + 1, bestDeg = -1;
         for (int i = k; i < empties; i++) {
             int r = er[i], c = ec[i];
@@ -99,7 +199,7 @@ class Solution {
             int used = row[r] | col[c] | box[b];
             int mask = (~used) & MaskALL;
             int cnt = Integer.bitCount(mask);
-            if (cnt == 0) { unplace(pushed); return false; } //  échec: on annule la propagation locale
+            if (cnt == 0) { unplace(pushed); return false; }
             if (cnt < min) {
                 min = cnt; best = i; bestMask = mask;
                 if (cnt == 1) { bestDeg = 0; break; }
@@ -126,25 +226,52 @@ class Solution {
         int r = er[k], c = ec[k], b = BOX_ID[r][c];
         int mask = bestMask;
 
-        // 3) Brancher (ordre LSB→MSB)
-        while (mask != 0) {
-            int bit = mask & -mask;
+        // 3) LCV : trier les candidats par "impact" croissant sur les voisins
+        int[] candBits = new int[min];
+        int nb = 0, tmp = mask;
+        while (tmp != 0) { int bb = tmp & -tmp; candBits[nb++] = bb; tmp ^= bb; }
+
+        int[] impact = new int[nb];
+        for (int t = 0; t < nb; t++) {
+            int bit = candBits[t];
+            int imp = 0;
+            for (int i = k + 1; i < empties; i++) {
+                int rr = er[i], cc = ec[i];
+                if (g[rr][cc] != 0) continue;
+                int bb = BOX_ID[rr][cc];
+                if (rr != r && cc != c && bb != b) continue; // pas voisin
+                int used2 = row[rr] | col[cc] | box[bb];
+                int m2 = (~used2) & MaskALL;
+                if ((m2 & bit) != 0) imp++;
+            }
+            impact[t] = imp;
+        }
+        // tri insertion (nb ≤ 25) par impact croissant
+        for (int i = 1; i < nb; i++) {
+            int kb = candBits[i], ki = impact[i], j = i - 1;
+            while (j >= 0 && impact[j] > ki) {
+                candBits[j+1] = candBits[j]; impact[j+1] = impact[j]; j--;
+            }
+            candBits[j+1] = kb; impact[j+1] = ki;
+        }
+
+        // 4) Brancher selon l'ordre LCV
+        for (int t = 0; t < nb; t++) {
+            int bit = candBits[t];
             int d = Integer.numberOfTrailingZeros(bit);
 
             g[r][c] = d; row[r] |= bit; col[c] |= bit; box[b] |= bit;
 
-            if (solve(k + 1)) return true;  // succès
+            if (solve(k + 1)) return true; // succès : on garde propagation + affectations
 
-            // échec de cette valeur → rollback de cette affectation seulement
+            // rollback de cette affectation et essayer la suivante
             g[r][c] = 0; row[r] ^= bit; col[c] ^= bit; box[b] ^= bit;
-            mask ^= bit;
         }
 
-        // toutes les valeurs ont échoué → rollback de la propagation locale et échec
+        // échec sur toutes les valeurs → annuler la propagation locale et échouer
         unplace(pushed);
         return false;
     }
-
 
     public static void main(String[] args) throws Exception {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
