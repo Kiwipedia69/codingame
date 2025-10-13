@@ -211,7 +211,7 @@ class Solution {
         while (k < empties && g[er[k]][ec[k]] != 0) k++;
         if (k == empties) return true;
 
-        // 1) MRV + tie-break par degré (utilise NEIGH[r][c])
+        // 1) MRV + tie-break par degré (via voisins NEIGH)
         int best = -1, bestMask = 0, min = N + 1, bestDeg = -1;
         for (int i = k; i < empties; i++) {
             int r = er[i], c = ec[i];
@@ -221,8 +221,9 @@ class Solution {
             int mask = (~used) & MaskALL;
             int cnt = Integer.bitCount(mask);
             if (cnt == 0) { unplace(pushed); return false; }
+
             int deg = 0;
-            if (cnt <= min) { // calcule le degré seulement si utile
+            if (cnt <= min) {
                 int[] neigh = NEIGH[r][c];
                 for (int t = 0; t < neigh.length; t++) {
                     int p = neigh[t];
@@ -241,27 +242,34 @@ class Solution {
         int r = er[k], c = ec[k], b = BOX_ID[r][c];
         int mask = bestMask;
 
-        // 3) LCV : trier les candidats par impact sur les voisins de (r,c)
+        // 3) LCV optimisé avec pré-calcul des m2 pour chaque voisin
         int[] candBits = new int[min];
         int nb = 0, tmp = mask;
         while (tmp != 0) { int bb = tmp & -tmp; candBits[nb++] = bb; tmp ^= bb; }
 
-        int[] impact = new int[nb];
+        // Pré-calcul une seule fois des masques "m2" (candidats disponibles) des voisins
         int[] neigh = NEIGH[r][c];
+        int L = neigh.length;
+        int[] neighAvail = new int[L];     // m2 pour chaque voisin
+        for (int u = 0; u < L; u++) {
+            int p = neigh[u];
+            int rr = (p >>> 8) & 0xFF, cc = p & 0xFF;
+            if (g[rr][cc] != 0) { neighAvail[u] = 0; continue; }
+            int bb2 = BOX_ID[rr][cc];
+            int used2 = row[rr] | col[cc] | box[bb2];
+            neighAvail[u] = (~used2) & MaskALL;   // m2
+        }
+
+        // Impact de chaque bit : nombre de voisins pour lesquels (m2 & bit) != 0
+        int[] impact = new int[nb];
         for (int t = 0; t < nb; t++) {
             int bit = candBits[t], imp = 0;
-            for (int u = 0; u < neigh.length; u++) {
-                int p = neigh[u];
-                int rr = (p >>> 8) & 0xFF, cc = p & 0xFF;
-                if (g[rr][cc] != 0) continue;
-                int bb2 = BOX_ID[rr][cc];
-                int used2 = row[rr] | col[cc] | box[bb2];
-                int m2 = (~used2) & MaskALL;
-                if ((m2 & bit) != 0) imp++;
+            for (int u = 0; u < L; u++) {
+                if ((neighAvail[u] & bit) != 0) imp++;
             }
             impact[t] = imp;
         }
-        // tri insertion par impact croissant
+        // tri insertion par impact croissant (nb ≤ 25)
         for (int i = 1; i < nb; i++) {
             int kb = candBits[i], ki = impact[i], j = i - 1;
             while (j >= 0 && impact[j] > ki) {
@@ -274,7 +282,6 @@ class Solution {
         for (int t = 0; t < nb; t++) {
             int bit = candBits[t];
             int d = Integer.numberOfTrailingZeros(bit);
-
             g[r][c] = d; row[r] |= bit; col[c] |= bit; box[b] |= bit;
 
             if (solve(k + 1)) return true;
@@ -285,6 +292,7 @@ class Solution {
         unplace(pushed);
         return false;
     }
+
 
     public static void main(String[] args) throws Exception {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
