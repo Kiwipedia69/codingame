@@ -1,58 +1,69 @@
 #include <iostream>
 #include <string>
-#include <vector>
-#include <algorithm>
 #include <unordered_map>
+#include <algorithm>
 
 using namespace std;
 
-/**
- * Auto-generated code below aims at helping you parse
- * the standard input according to the problem statement.
- **/
+static inline void to_lower_inplace(string& s) {
+    for (char& c : s) {
+        if (c >= 'A' && c <= 'Z') c = char(c - 'A' + 'a');
+    }
+}
 
-int main()
-{
-    int n; // Number of elements which make up the association table.
-    cin >> n; cin.ignore();
-    int q; // Number Q of file names to be analyzed.
-    cin >> q; cin.ignore();
-    cerr<<n<<" "<<q<<"\n";
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n; 
+    cin >> n; 
+    int q; 
+    cin >> q; 
+    cin.ignore();
+
     unordered_map<string, string> typeMIME;
+    typeMIME.reserve(n * 2);
+
     for (int i = 0; i < n; i++) {
         string ext; // file extension
-        string mt; // MIME type.
-        cin >> ext >> mt; cin.ignore();
-        transform(ext.begin(), ext.end(), ext.begin(),
-        [](unsigned char c){ return std::tolower(c); });
-        // cerr<<ext<<" "<<mt<<"\n";
-        typeMIME[ext]=mt;
+        string mt;  // MIME type
+        cin >> ext >> mt;
+        cin.ignore();
+
+        // mettre l'extension en minuscule
+        // transform(ext.begin(), ext.end(), ext.begin(),
+        //           [](unsigned char c){ return std::tolower(c); });
+        //opyi pour 100%
+        to_lower_inplace(ext);
+
+        typeMIME[ext] = mt;
     }
+
     for (int i = 0; i < q; i++) {
         string fname;
-        getline(cin, fname); // One file name per line.
-        string extFile = fname.substr(fname.find_last_of('.')+1,fname.size());
-        transform(extFile.begin(), extFile.end(), extFile.begin(),
-        [](unsigned char c){ return std::tolower(c); });
+        getline(cin, fname);
+
+        size_t posDot = fname.find_last_of('.');
+
+        if (posDot == string::npos || posDot == fname.size() - 1) {
+            cout << "UNKNOWN\n";
+            continue;
+        }
+
+        string extFile = fname.substr(posDot + 1);
+
+        // transform(extFile.begin(), extFile.end(), extFile.begin(),
+        //           [](unsigned char c){ return std::tolower(c); });
+        to_lower_inplace(extFile);
+
         auto it = typeMIME.find(extFile);
-        auto it2 = fname.find('.');
-
-        // cerr<<"fname ="<<fname<<"\n";
-        // cerr<<"extfile ="<<extFile<<"\n";
-
-        if (it != typeMIME.end() && it2!=std::string::npos ) {
-
-
-            std::cout << it->second << "\n";
+        if (it != typeMIME.end()) {
+            cout << it->second << "\n";
         } else {
-            std::cout << "UNKNOWN\n";
+            cout << "UNKNOWN\n";
         }
     }
 
-    // Write an answer using cout. DON'T FORGET THE "<< endl"
-    // To debug: cerr << "Debug messages..." << endl;
-
-
-    // For each of the Q filenames, display on a line the corresponding MIME type. If there is no corresponding type, then display UNKNOWN.
-    //cout << "UNKNOWN" << endl;
+    return 0;
 }
