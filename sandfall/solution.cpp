@@ -10,7 +10,9 @@ void drop(char c, vector<char>& box, int w, int h, int startX) {
     };
 
     int x = startX;
-    int y = 0;
+    int y = -1;
+
+    cerr<<c<<" "<<startX<<endl;
 
     while (true) {
         // drop direct
@@ -19,6 +21,7 @@ void drop(char c, vector<char>& box, int w, int h, int startX) {
             continue;
         }
 
+        
         int dir1 = std::islower(c) ? 1 : -1;
         int dir2 = -dir1;
 
@@ -59,6 +62,17 @@ int main() {
         cin.ignore();
         char c = s[0];
         drop(c, g, w, h, p);
+        
+        // test error
+        for (int y = 0; y < h; ++y) {
+            cerr<<'|';
+            for (int x = 0; x < w; ++x)
+                cerr << g[y * w + x];
+            cerr << "|\n";
+        }
+        cerr<<'+';
+        for(auto i=0;i<w;i++) {cerr<<'-';}
+        cerr<<"+\n";
     }
 
     for (int y = 0; y < h; ++y) {
