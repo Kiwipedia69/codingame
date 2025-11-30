@@ -44,6 +44,19 @@ void rotor(string& rot, string& code){
     cerr<<res<<endl;
 }
 
+void invRotor(string& rot, string& code){
+    string res="";
+
+    for(auto i=0;i<code.size();i++){
+        for(auto j =0;j<rot.size();j++){
+            if(code[i]==rot[j])
+                res+=j+'A';
+        }
+    }
+    code =res;
+    cerr<<res<<endl;
+}
+
 
 int main()
 {
@@ -61,20 +74,40 @@ int main()
     string message;
     getline(cin, message);
 
-    cerr<<message<<endl;
-    ceasarShift(message, pseudo_random_number);
-    // invCeasarShift(message, pseudo_random_number);
+    if(operation.compare("ENCODE")==0) {
 
-    // message = "ZZZ";
-    // cerr<<message<<endl;
-    // ceasarShift(message, pseudo_random_number);
-    // invCeasarShift(message, pseudo_random_number);
+        cerr<<message<<endl;
+        ceasarShift(message, pseudo_random_number);
+        // invCeasarShift(message, pseudo_random_number);
 
-    for(auto i=0;i<listRotors.size();i++){
-        rotor(listRotors[i],message);
+        // message = "ZZZ";
+        // cerr<<message<<endl;
+        // ceasarShift(message, pseudo_random_number);
+        // invCeasarShift(message, pseudo_random_number);
+
+        for(auto i=0;i<listRotors.size();i++){
+            rotor(listRotors[i],message);
+        }
     }
-    
 
+
+    if(operation.compare("DECODE")==0) {
+
+        cerr<<message<<endl;
+        // invCeasarShift(message, pseudo_random_number);
+
+        // message = "ZZZ";
+        // cerr<<message<<endl;
+        // ceasarShift(message, pseudo_random_number);
+        // invCeasarShift(message, pseudo_random_number);
+
+        for(auto i=0;i<listRotors.size();i++){
+            invRotor(listRotors[i],message);
+        }
+
+        invCeasarShift(message, pseudo_random_number);
+
+    }
 
     // Write an answer using cout. DON'T FORGET THE "<< endl"
     // To debug: cerr << "Debug messages..." << endl;
