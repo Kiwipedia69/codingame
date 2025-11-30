@@ -12,36 +12,57 @@ using namespace std;
 
 void ceasarShift(string &s, int x){
     for(auto i=0;i<s.size();i++){
-        if(s[i]+i+x<='Z'){       
-            s[i]+=i+x;
-        }
-        else{    
-            s[i]+=i+x-'Z'+'A'-1;
-        }
+        int shift = (i+x)%26;
+        int base = s[i]-'A';
+
+        int res = (base+shift)%26;
+        s[i]='A'+res;
     }
     cerr<<s<<endl;
 }
+// void ceasarShift(string &s, int x){
+//     for(auto i=0;i<s.size();i++){
+//         int res = (i+x)%26;
+//         if(s[i]+res<='Z'){       
+//             s[i]+=res;
+//         }
+//         else{    
+//             s[i]+=res-'Z'+'A'-1;
+//         }
+//     }
+//     cerr<<s<<endl;
+// }
 
-void invCeasarShift(string &s, int x){
+void invCeasarShift(string &s, int x){     
     for(auto i=0;i<s.size();i++){
-        if(s[i]-i-x>='A'){       
-            s[i]+=-i-x;
+        int res = (-i-x)%26;
+        cerr<<res<<endl; 
+        if(s[i]+res>='A'){       
+            s[i]+=res;
         }
-        else{    
-            s[i]+=-i-x+'Z'-'A'+1;
+        else{   
+            s[i]+=res+'Z'-'A'+1;
         }
     }
     cerr<<s<<endl;
 }
 
-void rotor(string& rot, string& code){
-    string res="";
 
-    for(auto i=0;i<code.size();i++){
-        res+=rot[code[i]-'A'];
+
+// void rotor(string& rot, string& code){
+//     string res="";
+
+//     for(auto i=0;i<code.size();i++){
+//         res+=rot[code[i]-'A'];
+//     }
+//     code =res;
+//     cerr<<res<<endl;
+// }
+void rotor(const string& rot, string& code) {
+    for (char& c : code) {
+        c = rot[c - 'A'];
     }
-    code =res;
-    cerr<<res<<endl;
+    cerr << code << endl;
 }
 
 void invRotor(string& rot, string& code){
@@ -56,6 +77,7 @@ void invRotor(string& rot, string& code){
     code =res;
     cerr<<res<<endl;
 }
+
 
 
 int main()
@@ -74,18 +96,15 @@ int main()
     string message;
     getline(cin, message);
 
+    cerr<<operation<<endl;
+    cerr<<pseudo_random_number<<endl;
+
     if(operation.compare("ENCODE")==0) {
 
         cerr<<message<<endl;
         ceasarShift(message, pseudo_random_number);
-        // invCeasarShift(message, pseudo_random_number);
 
-        // message = "ZZZ";
-        // cerr<<message<<endl;
-        // ceasarShift(message, pseudo_random_number);
-        // invCeasarShift(message, pseudo_random_number);
-
-        for(auto i=0;i<listRotors.size();i++){
+        for(int i=0;i<listRotors.size();i++){
             rotor(listRotors[i],message);
         }
     }
@@ -94,14 +113,8 @@ int main()
     if(operation.compare("DECODE")==0) {
 
         cerr<<message<<endl;
-        // invCeasarShift(message, pseudo_random_number);
 
-        // message = "ZZZ";
-        // cerr<<message<<endl;
-        // ceasarShift(message, pseudo_random_number);
-        // invCeasarShift(message, pseudo_random_number);
-
-        for(auto i=0;i<listRotors.size();i++){
+        for(int i=listRotors.size()-1;i>=0;--i){
             invRotor(listRotors[i],message);
         }
 
